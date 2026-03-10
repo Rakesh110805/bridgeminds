@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Globe2, MessageSquare, Reply, Send, X, Clock, AlertCircle, CheckCircle2, PlayCircle } from 'lucide-react';
-import axios from 'axios';
+import api, { BASE_URL } from '../../lib/api';
 import { useAuth } from '../../components/AuthContext';
 import { translateFromEnglish } from '../../lib/translate';
 
@@ -61,14 +61,14 @@ export default function MentorDashboard() {
 
   const fetchStats = async () => {
     try {
-      const res = await axios.get(`http://localhost:3001/api/mentor/stats/${user?.id}`);
+      const res = await api.get(`/api/mentor/stats/${user?.id}`);
       setStats(res.data);
     } catch (err) { console.error(err); }
   };
 
   const fetchQuestions = async () => {
     try {
-      const res = await axios.get('http://localhost:3001/api/ask/pending');
+      const res = await api.get('/api/ask/pending');
       setQuestions(res.data);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
@@ -84,7 +84,7 @@ export default function MentorDashboard() {
         translatedReply = await translateFromEnglish(replyText, q.sourceLang);
       }
 
-      await axios.post('http://localhost:3001/api/mentor/reply', {
+      await api.post('/api/mentor/reply', {
         mentorReply: replyText,
         translatedReply, // pre-translated in browser
         questionId: q.id,
@@ -226,7 +226,7 @@ export default function MentorDashboard() {
                     {q.audioPath && (
                       <div className="p-3 bg-black/20 rounded-xl border border-white/5">
                         <p className="text-[10px] font-bold text-amber mb-2 uppercase tracking-wider">🎙 Student Voice Recording</p>
-                        <audio controls className="w-full h-8 outline-none" src={`http://localhost:3001${q.audioPath}`} />
+                        <audio controls className="w-full h-8 outline-none" src={`${BASE_URL}${q.audioPath}`} />
                       </div>
                     )}
                   </div>

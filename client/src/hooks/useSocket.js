@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
+import { BASE_URL } from '../lib/api';
 
 let sharedSocket = null;
 
@@ -9,8 +10,8 @@ export function useSocket() {
 
     useEffect(() => {
         if (!sharedSocket) {
-            sharedSocket = io('http://localhost:3001', {
-                transports: ['websocket'],
+            sharedSocket = io(BASE_URL.replace(/\/api$/, '') || '/', {
+                transports: ['websocket', 'polling'], // added polling for better fallbacks
                 autoConnect: true
             });
         }

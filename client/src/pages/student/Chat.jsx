@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { PlayCircle, Send, Bot, CheckCheck, Wifi } from 'lucide-react';
-import axios from 'axios';
+import api from '../../lib/api';
 import { useAuth } from '../../components/AuthContext';
 import { useSocket } from '../../hooks/useSocket';
 
@@ -31,7 +31,7 @@ export default function Chat() {
   const fetchHistory = async () => {
     if (!user) return;
     try {
-      const qs = await axios.get(`http://localhost:3001/api/ask/student/${user.id}`);
+      const qs = await api.get(`/api/ask/student/${user.id}`);
       let chatFlow = [];
       for (const q of qs.data) {
         chatFlow.push({
@@ -47,7 +47,7 @@ export default function Chat() {
           });
         }
         try {
-          const reps = await axios.get(`http://localhost:3001/api/mentor/question/${q.id}`);
+          const reps = await api.get(`/api/mentor/question/${q.id}`);
           for (const rep of reps.data) {
             chatFlow.push({
               id: `rep_${rep.id}`, sender: 'mentor', text: rep.english, translated: rep.translated,
@@ -87,7 +87,7 @@ export default function Chat() {
     setMessages(prev => [...prev, optimisticMsg]);
     setText('');
     try {
-      const res = await axios.post('http://localhost:3001/api/ask', {
+      const res = await api.post('/api/ask', {
         text: text.trim(), sourceLang: 'Tamil', studentId: user?.id, subject: 'General'
       });
       setMessages(prev => prev.filter(m => m.id !== optimisticMsg.id).concat([

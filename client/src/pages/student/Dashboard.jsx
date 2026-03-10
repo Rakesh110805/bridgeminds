@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../components/AuthContext';
 import { PlayCircle, Award, Target, MessageSquare, Globe2, Bot, Zap, Volume2 } from 'lucide-react';
-import axios from 'axios';
+import api from '../../lib/api';
 
 function AnimatedCounter({ target, duration = 1200, suffix = '' }) {
   const [count, setCount] = useState(0);
@@ -61,7 +61,7 @@ export default function StudentDashboard() {
   };
 
   useEffect(() => {
-    axios.get(`http://localhost:3001/api/student/dashboard/${user?.id}`)
+    api.get(`/api/student/dashboard/${user?.id}`)
       .then(res => setStats(res.data))
       .catch(console.error);
   }, [user]);

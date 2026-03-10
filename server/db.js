@@ -1,7 +1,7 @@
 const Database = require('better-sqlite3');
 const path = require('path');
 
-const dbPath = path.join(__dirname, 'database.sqlite');
+const dbPath = process.env.DATABASE_PATH || path.join(__dirname, 'database.sqlite');
 const db = new Database(dbPath);
 
 // WAL mode for performance
@@ -85,11 +85,17 @@ const initDb = () => {
     );
   `);
 
-  // Seed demo student account if not present
-  const existing = db.prepare("SELECT id FROM users WHERE email = 'priya@demo.com'").get();
-  if (!existing) {
+  // Seed demo accounts if not present
+  const student = db.prepare("SELECT id FROM users WHERE email = 'priya@demo.com'").get();
+  if (!student) {
     db.prepare("INSERT OR IGNORE INTO users (id, name, email, password, role) VALUES (?,?,?,?,?)")
       .run('demo-123', 'Priya Sharma', 'priya@demo.com', 'demo123', 'STUDENT');
+  }
+
+  const mentor = db.prepare("SELECT id FROM users WHERE email = 'amara@demo.com'").get();
+  if (!mentor) {
+    db.prepare("INSERT OR IGNORE INTO users (id, name, email, password, role) VALUES (?,?,?,?,?)")
+      .run('mentor-demo', 'Dr. Amara Osei', 'amara@demo.com', 'demo123', 'MENTOR');
   }
 };
 

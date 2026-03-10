@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../lib/api';
 import { useAuth } from '../../components/AuthContext';
 import { Users, AlertCircle, Award, TrendingUp, Clock } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, CartesianGrid } from 'recharts';
@@ -30,8 +30,8 @@ export default function MentorAnalytics() {
         const fetchAll = async () => {
             try {
                 const [analyticsRes, basicRes] = await Promise.all([
-                    axios.get(`http://localhost:3001/api/mentor/analytics/${user?.id || 'mentor-demo'}`),
-                    axios.get(`http://localhost:3001/api/mentor/stats/${user?.id || 'mentor-demo'}`)
+                    api.get(`/api/mentor/analytics/${user?.id || 'mentor-demo'}`),
+                    api.get(`/api/mentor/stats/${user?.id || 'mentor-demo'}`)
                 ]);
                 setStats(analyticsRes.data);
                 setBasicStats(basicRes.data);

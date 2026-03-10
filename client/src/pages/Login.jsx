@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../components/AuthContext';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../lib/api';
 import { GraduationCap, Users } from 'lucide-react';
 
 export default function Login() {
@@ -17,7 +17,7 @@ export default function Login() {
     setLoading(true);
     setErrorText('');
     try {
-      const res = await axios.post('http://localhost:3001/api/auth/login', { email, password });
+      const res = await api.post('/api/auth/login', { email, password });
       login(res.data);
     } catch {
       setErrorText('Invalid credentials. Use the quick demo buttons below!');
@@ -33,7 +33,7 @@ export default function Login() {
       ? { email: 'priya@demo.com', password: 'demo123' }
       : { email: 'amara@demo.com', password: 'demo123' };
     try {
-      const res = await axios.post('http://localhost:3001/api/auth/login', creds);
+      const res = await api.post('/api/auth/login', creds);
       login(res.data);
     } catch {
       setErrorText('Demo login failed. Make sure the server is running on port 3001.');

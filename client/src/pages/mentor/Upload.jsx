@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { UploadCloud, FileVideo, CheckCircle } from 'lucide-react';
-import axios from 'axios';
+import api from '../../lib/api';
 
 export default function MentorUpload() {
   const [dragActive, setDragActive] = useState(false);
@@ -38,7 +38,7 @@ export default function MentorUpload() {
       formData.append('title', title);
       formData.append('subject', subject);
 
-      await axios.post('http://localhost:3001/api/packs/upload', formData, {
+      await api.post('/api/packs/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }

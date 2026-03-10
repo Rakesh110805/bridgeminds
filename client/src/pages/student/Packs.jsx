@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Download, CheckCircle, WifiOff, Play, X } from 'lucide-react';
-import axios from 'axios';
+import api, { BASE_URL } from '../../lib/api';
 import { useAuth } from '../../components/AuthContext';
 
 export default function Packs() {
@@ -10,14 +10,14 @@ export default function Packs() {
 
   useEffect(() => {
     // simulated fetch
-    axios.get(`http://localhost:3001/api/packs/${user?.id || 'demo'}`)
+    api.get(`/api/packs/${user?.id || 'demo'}`)
       .then(res => setPacks(res.data))
       .catch(console.error);
   }, [user]);
 
   const handleDownload = async (id) => {
     try {
-      await axios.post(`http://localhost:3001/api/packs/${user?.id || 'demo'}/download`, { packId: id });
+      await api.post(`/api/packs/${user?.id || 'demo'}/download`, { packId: id });
       setPacks(packs.map(p => p.id === id ? { ...p, downloaded: true, progress: 100 } : p));
     } catch (err) {
       console.error('Failed to log download:', err);
@@ -88,7 +88,7 @@ export default function Packs() {
               </button>
             </div>
             <video
-              src={`http://localhost:3001${activeVideo}`}
+              src={`${BASE_URL}${activeVideo}`}
               controls
               autoPlay
               className="w-full h-auto aspect-video outline-none"

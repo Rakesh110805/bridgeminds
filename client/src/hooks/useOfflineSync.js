@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../lib/api';
 import { getUnsyncedQuestions, markAsSynced } from '../lib/pouchdb';
 
 export function useOfflineSync() {
@@ -19,11 +19,12 @@ export function useOfflineSync() {
       console.log(`Attempting to sync ${unsynced.length} records...`);
 
       // Mock push to server
-      const promises = unsynced.map(doc =>
-        axios.post('http://localhost:3001/api/ask', {
-          text: doc.text,
-          sourceLang: doc.sourceLang,
-          subject: doc.subject
+      const promises = unsynced.map(q =>
+        api.post('/api/ask', {
+          text: q.text,
+          studentId: q.studentId,
+          sourceLang: q.sourceLang,
+          subject: q.subject
         })
       );
 

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../components/AuthContext';
 import { Link, useSearchParams } from 'react-router-dom';
-import axios from 'axios';
+import api from '../lib/api';
 
 export default function Register() {
   const [searchParams] = useSearchParams();
@@ -21,7 +21,7 @@ export default function Register() {
     setLoading(true);
     setErrorText('');
     try {
-      const res = await axios.post('http://localhost:3001/api/auth/register', { name, email, password, role });
+      const res = await api.post('/api/auth/register', { name, email, password, role });
       login(res.data);
     } catch (err) {
       setErrorText(err.response?.data?.message || 'Registration failed');

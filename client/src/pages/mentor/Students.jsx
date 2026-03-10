@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { User, MessageCircle, Clock, Search } from 'lucide-react';
-import axios from 'axios';
+import api from '../../lib/api';
 import { useAuth } from '../../components/AuthContext';
 
 export default function MentorStudents() {
@@ -15,7 +15,7 @@ export default function MentorStudents() {
 
     const fetchStudents = async () => {
         try {
-            const res = await axios.get(`http://localhost:3001/api/mentor/students/${user?.id || 'mentor-demo'}`);
+            const res = await api.get(`/api/mentor/students/${user?.id || 'mentor-demo'}`);
             setStudents(res.data);
         } catch (err) {
             console.error(err);

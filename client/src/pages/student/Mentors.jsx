@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Users, MapPin, Star, Zap, Search } from 'lucide-react';
-import axios from 'axios';
+import api from '../../lib/api';
 import { useAuth } from '../../components/AuthContext';
 
 
@@ -14,7 +14,7 @@ export default function Mentors() {
     const { user } = useAuth();
 
     useEffect(() => {
-        axios.get('http://localhost:3001/api/match/all')
+        api.get('/api/match/all')
             .then(res => setMentors(res.data.mentors || []))
             .catch(() => { })
             .finally(() => setLoading(false));

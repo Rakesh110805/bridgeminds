@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Save, Shield, Bell, Globe, BookOpen, Languages } from 'lucide-react';
 import { useAuth } from '../../components/AuthContext';
-import axios from 'axios';
+import api from '../../lib/api';
 
 const SUBJECTS = ['Math', 'Science', 'Computer Science', 'English', 'Career', 'Other'];
 const LANGUAGES = ['Tamil', 'Hindi', 'English', 'French', 'Swahili', 'Spanish', 'Telugu', 'Bengali', 'Arabic', 'Yoruba'];
@@ -31,7 +31,7 @@ export default function MentorSettings() {
 
     useEffect(() => {
         if (!user) return;
-        axios.get(`http://localhost:3001/api/mentor/settings/${user.id}`)
+        api.get(`/api/mentor/settings/${user.id}`)
             .then(res => {
                 if (res.data && res.data.mentorId) {
                     setSettings({
@@ -50,7 +50,7 @@ export default function MentorSettings() {
         e.preventDefault();
         setLoading(true);
         try {
-            await axios.put(`http://localhost:3001/api/mentor/settings/${user?.id || 'mentor-demo'}`, settings);
+            await api.put(`/api/mentor/settings/${user?.id || 'mentor-demo'}`, settings);
             setSaved(true);
             setTimeout(() => setSaved(false), 3000);
         } catch (err) {

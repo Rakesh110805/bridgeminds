@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { Inbox, Users, UploadCloud, BarChart, Settings, LogOut } from 'lucide-react';
 import { useAuth } from '../components/AuthContext';
-import axios from 'axios';
+import api from '../lib/api';
 
 export default function MentorLayout() {
   const { user, logout } = useAuth();
@@ -11,7 +11,7 @@ export default function MentorLayout() {
 
   useEffect(() => {
     const fetchPending = () => {
-      axios.get('http://localhost:3001/api/ask/pending')
+      api.get('/api/ask/pending')
         .then(r => setPendingCount(r.data.length))
         .catch(() => { });
     };

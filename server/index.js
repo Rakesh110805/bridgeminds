@@ -9,14 +9,17 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: process.env.SOCKET_CORS_ORIGIN || 'http://localhost:5173',
+    origin: process.env.SOCKET_CORS_ORIGIN || "*",
     methods: ['GET', 'POST']
   }
 });
 
 const PORT = process.env.PORT || 3001;
 
-app.use(cors());
+app.use(cors({
+  origin: process.env.SOCKET_CORS_ORIGIN || "*",
+  credentials: true
+}));
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -44,6 +47,14 @@ app.use('/api/student', require('./routes/student'));
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+
+// Serve frontend from Express in production
+if (process.env.NODE_ENV === 'production' || process.env.SERVE_STATIC === 'true') {
+  app.use(express.static(path.join(__dirname, '../client/dist')));
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../client/dist', 'index.html'));
+  });
+}
 
 // Use server.listen (not app.listen) for Socket.io
 server.listen(PORT, () => {

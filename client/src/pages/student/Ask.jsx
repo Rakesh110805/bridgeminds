@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Mic, Send, Globe2, Bot, PlayCircle } from 'lucide-react';
-import axios from 'axios';
+import api from '../../lib/api';
 import { saveLocalQuestion } from '../../lib/pouchdb';
 import { useOfflineSync } from '../../hooks/useOfflineSync';
 import { useAuth } from '../../components/AuthContext';
@@ -127,7 +127,7 @@ export default function Ask() {
         formData.append('audio', audioBlobRef.current, `recording_${Date.now()}.webm`);
       }
 
-      const res = await axios.post('http://localhost:3001/api/ask', formData, {
+      const res = await api.post('/api/ask', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
