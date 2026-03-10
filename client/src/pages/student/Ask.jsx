@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { Mic, Send, Globe2, Bot } from 'lucide-react';
+import { Mic, Send, Globe2, Bot, PlayCircle } from 'lucide-react';
 import axios from 'axios';
 import { saveLocalQuestion } from '../../lib/pouchdb';
 import { useOfflineSync } from '../../hooks/useOfflineSync';
+import { useAuth } from '../../components/AuthContext';
+import { translateToEnglish, translateFromEnglish } from '../../lib/translate';
 
 export default function Ask() {
   const [text, setText] = useState('');
@@ -12,6 +14,7 @@ export default function Ask() {
   const [result, setResult] = useState(null);
 
   const { isOnline, checkPending } = useOfflineSync();
+  const { user } = useAuth();
 
   const tags = ['Math', 'Science', 'Computer Science', 'English', 'Career', 'Other'];
   const [selectedTag, setSelectedTag] = useState('Computer Science');
@@ -92,7 +95,6 @@ export default function Ask() {
     setStatus('translating');
 
     if (!isOnline) {
-      // Offline mode
       await saveLocalQuestion({ text: content, sourceLang: lang, subject: selectedTag });
       checkPending();
       setResult({
@@ -106,22 +108,36 @@ export default function Ask() {
     }
 
     try {
+      // Step 1: Translate to English in the browser (browser fetch has no network restrictions)
+      let translatedToEnglish = content;
+      if (lang !== 'English') {
+        setStatus('translating');
+        translatedToEnglish = await translateToEnglish(content, lang);
+      }
+
+      // Step 2: Send to server (server just saves to DB and generates AI reply in English)
       const formData = new FormData();
       formData.append('text', content);
+      formData.append('translatedText', translatedToEnglish); // pre-translated!
       formData.append('sourceLang', lang);
       formData.append('subject', selectedTag);
-      formData.append('studentId', 'demo-123'); // or user.id
+      formData.append('studentId', user?.id);
 
       if (audioBlobRef.current) {
         formData.append('audio', audioBlobRef.current, `recording_${Date.now()}.webm`);
       }
 
       const res = await axios.post('http://localhost:3001/api/ask', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
-      setResult(res.data);
+
+      // Step 3: Translate AI reply back to student's language in the browser
+      let aiReplyInNative = res.data.aiReply;
+      if (lang !== 'English' && res.data.aiReply) {
+        aiReplyInNative = await translateFromEnglish(res.data.aiReply, lang);
+      }
+
+      setResult({ ...res.data, aiReply: aiReplyInNative, originalTranslated: translatedToEnglish });
       setStatus('complete');
     } catch (e) {
       console.error(e);
@@ -231,6 +247,14 @@ export default function Ask() {
             <textarea
               value={text}
               onChange={(e) => setText(e.target.value)}
+              onPaste={(e) => {
+                const pastedText = e.clipboardData.getData('text');
+                if (pastedText) {
+                  e.preventDefault();
+                  setText(prev => prev + pastedText);
+                }
+              }}
+              style={{ userSelect: 'text', WebkitUserSelect: 'text' }}
               className="w-full bg-black/20 border border-white/10 rounded-xl p-4 min-h-[100px] outline-none"
               placeholder={`Type in ${lang}...`}
             />

@@ -7,6 +7,7 @@ import StudentDashboard from './pages/student/Dashboard';
 import Ask from './pages/student/Ask';
 import Packs from './pages/student/Packs';
 import Chat from './pages/student/Chat';
+import Mentors from './pages/student/Mentors';
 import MentorLayout from './layouts/MentorLayout';
 import MentorDashboard from './pages/mentor/Dashboard';
 import MentorUpload from './pages/mentor/Upload';
@@ -31,7 +32,8 @@ function App() {
           <Route path="dashboard" element={<StudentDashboard />} />
           <Route path="ask" element={<Ask />} />
           <Route path="packs" element={<Packs />} />
-          <Route path="chat/:mentorId" element={<Chat />} />
+          <Route path="chat" element={<Chat />} />
+          <Route path="mentors" element={<Mentors />} />
         </Route>
 
         {/* Mentor Routes */}

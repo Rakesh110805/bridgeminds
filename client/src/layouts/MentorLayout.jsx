@@ -1,13 +1,27 @@
+import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { Inbox, Users, UploadCloud, BarChart, Settings, LogOut } from 'lucide-react';
 import { useAuth } from '../components/AuthContext';
+import axios from 'axios';
 
 export default function MentorLayout() {
   const { user, logout } = useAuth();
   const location = useLocation();
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    const fetchPending = () => {
+      axios.get('http://localhost:3001/api/ask/pending')
+        .then(r => setPendingCount(r.data.length))
+        .catch(() => { });
+    };
+    fetchPending();
+    const interval = setInterval(fetchPending, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const navItems = [
-    { label: 'Inbox', icon: Inbox, path: '/mentor/dashboard', badge: 14 },
+    { label: 'Inbox', icon: Inbox, path: '/mentor/dashboard', badge: pendingCount },
     { label: 'My Students', icon: Users, path: '/mentor/students' },
     { label: 'Upload Lessons', icon: UploadCloud, path: '/mentor/upload' },
     { label: 'Analytics', icon: BarChart, path: '/mentor/analytics' },
@@ -34,16 +48,15 @@ export default function MentorLayout() {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`flex justify-between items-center px-4 py-3 rounded-xl transition-all ${
-                    active ? 'bg-teal/10 text-teal font-bold' : 'text-paper/60 hover:bg-white/5 hover:text-paper'
-                  }`}
+                  className={`flex justify-between items-center px-4 py-3 rounded-xl transition-all ${active ? 'bg-teal/10 text-teal font-bold' : 'text-paper/60 hover:bg-white/5 hover:text-paper'
+                    }`}
                 >
                   <div className="flex items-center gap-3">
                     <item.icon size={18} />
                     <span className="text-sm">{item.label}</span>
                   </div>
-                  {item.badge && (
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${active ? 'bg-teal text-ink' : 'bg-white/10 text-white'}`}>
+                  {item.badge > 0 && (
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${active ? 'bg-teal text-ink' : 'bg-coral/20 text-coral'}`}>
                       {item.badge}
                     </span>
                   )}
@@ -55,7 +68,9 @@ export default function MentorLayout() {
 
         <div className="px-6 border-t border-white/5 pt-6">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-violet flex-shrink-0" />
+            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-violet to-teal flex items-center justify-center flex-shrink-0 font-bold text-white">
+              {user?.name?.charAt(0) || 'M'}
+            </div>
             <div className="overflow-hidden">
               <p className="text-sm font-bold truncate">{user?.name || 'Dr. Amara Osei'}</p>
               <p className="text-xs text-paper/50 truncate">{user?.email || 'amara@demo.com'}</p>
@@ -68,7 +83,7 @@ export default function MentorLayout() {
         </div>
       </aside>
 
-      {/* Main Content Area */}
+      {/* Main Content */}
       <main className="flex-1 overflow-y-auto w-full">
         <header className="h-[60px] border-b border-white/5 px-8 flex justify-between items-center bg-[#0D1321] sticky top-0 z-20">
           <div className="flex gap-2">
