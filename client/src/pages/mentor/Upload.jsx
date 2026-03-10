@@ -1,10 +1,14 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { UploadCloud, FileVideo, CheckCircle } from 'lucide-react';
+import axios from 'axios';
 
 export default function MentorUpload() {
   const [dragActive, setDragActive] = useState(false);
   const [file, setFile] = useState(null);
   const [status, setStatus] = useState('idle'); // idle, uploading, complete
+  const [title, setTitle] = useState('');
+  const [subject, setSubject] = useState('Math');
+  const fileInputRef = useRef(null);
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -25,12 +29,26 @@ export default function MentorUpload() {
     }
   };
 
-  const handleUpload = () => {
+  const handleUpload = async () => {
     if (!file) return;
     setStatus('uploading');
-    setTimeout(() => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('title', title);
+      formData.append('subject', subject);
+
+      await axios.post('http://localhost:3001/api/packs/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
       setStatus('complete');
-    }, 2000);
+    } catch (err) {
+      console.error(err);
+      setStatus('idle');
+      alert('Upload failed');
+    }
   };
 
   return (
@@ -52,7 +70,7 @@ export default function MentorUpload() {
       ) : (
         <div className="space-y-6">
           {/* Drag & Drop Zone */}
-          <div 
+          <div
             className={`card-glass p-12 flex flex-col items-center justify-center border-2 border-dashed transition-all ${dragActive ? 'border-teal bg-teal/5' : file ? 'border-sky bg-sky/5' : 'border-white/20'}`}
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
@@ -63,7 +81,7 @@ export default function MentorUpload() {
               <div className="text-center">
                 <FileVideo size={48} className="text-sky mx-auto mb-4" />
                 <p className="font-bold text-lg mb-1">{file.name}</p>
-                <p className="text-sm text-paper/50">{(file.size / (1024*1024)).toFixed(2)} MB</p>
+                <p className="text-sm text-paper/50">{(file.size / (1024 * 1024)).toFixed(2)} MB</p>
                 <button onClick={() => setFile(null)} className="text-coral text-sm mt-4 hover:underline">Remove</button>
               </div>
             ) : (
@@ -71,7 +89,8 @@ export default function MentorUpload() {
                 <UploadCloud size={48} className="text-teal mx-auto mb-4 opacity-70" />
                 <p className="font-bold text-lg mb-2">Drag and drop video files here</p>
                 <p className="text-sm text-paper/50 mb-6">Supports .mp4, .webm up to 500MB</p>
-                <div className="btn-primary pointer-events-auto cursor-pointer inline-block">Browse Files</div>
+                <input type="file" ref={fileInputRef} className="hidden" onChange={(e) => e.target.files && setFile(e.target.files[0])} accept="video/*" />
+                <div onClick={() => fileInputRef.current?.click()} className="btn-primary pointer-events-auto cursor-pointer inline-block">Browse Files</div>
               </div>
             )}
           </div>
@@ -79,11 +98,11 @@ export default function MentorUpload() {
           <div className="grid grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-bold mb-2">Pack Title</label>
-              <input type="text" className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-teal" placeholder="e.g. Intro to Algebra" />
+              <input type="text" value={title} onChange={e => setTitle(e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-teal" placeholder="e.g. Intro to Algebra" />
             </div>
             <div>
               <label className="block text-sm font-bold mb-2">Subject</label>
-              <select className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 outline-none">
+              <select value={subject} onChange={e => setSubject(e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 outline-none">
                 <option>Math</option>
                 <option>Science</option>
                 <option>Computer Science</option>
@@ -101,7 +120,7 @@ export default function MentorUpload() {
             </div>
           </div>
 
-          <button 
+          <button
             disabled={!file || status === 'uploading'}
             onClick={handleUpload}
             className={`w-full py-4 rounded-xl font-bold flex justify-center items-center gap-2 transition-all ${!file ? 'bg-white/10 text-white/40 cursor-not-allowed' : status === 'uploading' ? 'bg-teal/50 text-ink animate-pulse' : 'bg-teal text-ink hover:-translate-y-1 shadow-[0_4px_20px_rgba(0,201,167,0.4)]'}`}

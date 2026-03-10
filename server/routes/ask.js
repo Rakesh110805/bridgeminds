@@ -1,63 +1,98 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const db = require('../db'); // import SQLite db
 
-const upload = multer({ storage: multer.memoryStorage() });
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, '../uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir);
+}
 
-// In-memory data store for questions
-const questionsDb = [];
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, uploadsDir)
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
+    cb(null, uniqueSuffix + '.webm')
+  }
+})
+
+const upload = multer({ storage: storage });
 
 router.post('/', upload.single('audio'), async (req, res) => {
   try {
     const { text, sourceLang, studentId, subject } = req.body;
     let transcribedText = text;
+    let audioPath = null;
 
-    // 1. Audio Processing (Mock Whisper)
     if (req.file) {
-      console.log('Received audio blob, mocking Whisper API...');
-      await new Promise(r => setTimeout(r, 1500));
-      transcribedText = "Python-ல் loops எப்படி use பண்றது?";
+      audioPath = '/uploads/' + req.file.filename;
     }
 
     if (!transcribedText) {
-      return res.status(400).json({ message: 'No text or audio provided' });
+      return res.status(400).json({ message: 'No text provided' });
     }
 
-    // 2. Translation (Mock Google Translate)
-    console.log(`Translating from ${sourceLang} to English...`);
-    await new Promise(r => setTimeout(r, 1000));
-    const translatedText = "How do I use loops in Python?";
+    // Execute translations in parallel to dramatically cut latency
+    let translatedText = transcribedText; // Fallback
+    let aiReplyTranslated = aiReplyEnglish; // Fallback
 
-    // 3. Save Question Structure
-    const question = {
-      id: Date.now().toString(),
+    try {
+      const langCodeMap = { 'Tamil': 'ta', 'Hindi': 'hi', 'Spanish': 'es', 'English': 'en', 'French': 'fr', 'Swahili': 'sw' };
+      const tc = langCodeMap[sourceLang] || 'ta';
+
+      const [transToEnglishRes, transToNativeRes] = await Promise.all([
+        fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(transcribedText)}&langpair=${tc}|en`),
+        fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(aiReplyEnglish)}&langpair=en|${tc}`)
+      ]);
+
+      const [englishJson, nativeJson] = await Promise.all([
+        transToEnglishRes.json(),
+        transToNativeRes.json()
+      ]);
+
+      if (englishJson.responseData?.translatedText) {
+        translatedText = englishJson.responseData.translatedText;
+      }
+      if (nativeJson.responseData?.translatedText) {
+        aiReplyTranslated = nativeJson.responseData.translatedText;
+      }
+    } catch (e) {
+      console.error("Parallel translation API failed", e);
+    }
+
+    const aiReplyJson = JSON.stringify({
+      originalTranslated: aiReplyTranslated,
+      english: aiReplyEnglish
+    });
+
+    const questionId = 'q_' + Date.now().toString();
+
+    // 4. Save Question to DB
+    const insert = db.prepare(`
+        INSERT INTO questions (id, studentId, subject, original, translated, sourceLang, status, aiReply, audioPath, createdAt)
+        VALUES (@id, @studentId, @subject, @original, @translated, @sourceLang, @status, @aiReply, @audioPath, @createdAt)
+    `);
+
+    insert.run({
+      id: questionId,
       studentId: studentId || 'demo-123',
       subject: subject || 'Computer Science',
       original: transcribedText,
       translated: translatedText,
       sourceLang: sourceLang || 'Tamil',
       status: 'queued_for_mentor',
-      aiReply: null,
+      aiReply: aiReplyJson,
+      audioPath: audioPath,
       createdAt: new Date().toISOString()
-    };
-    
-    questionsDb.push(question);
-
-    // 4. AI Tutor Instant Reply (Mock Claude)
-    console.log('Fetching instant Claude reply...');
-    await new Promise(r => setTimeout(r, 2000));
-    const aiReplyEnglish = `A loop is like doing chores — if you need to water 10 plants, instead of going one by one and coming back, you make one round trip. In Python, you can write: \n\nfor i in range(10):\n    water_plant()`;
-    
-    // Translate AI back to Source Lang
-    const aiReplyTranslated = "ஒரு loop என்பது வீட்டு வேலைகள் செய்வது போன்றது — நீங்கள் 10 செடிகளுக்கு தண்ணீர் ஊற்றினால், நீங்கள் 10 முறை சென்று வர வேண்டாம், ஒரே பயணத்தில் ஊற்றலாம். Python-ல்: \nfor i in range(10):\n    water_plant()";
-
-    question.aiReply = {
-      originalTranslated: aiReplyTranslated,
-      english: aiReplyEnglish
-    };
+    });
 
     res.json({
-      questionId: question.id,
+      questionId: questionId,
       aiReply: aiReplyTranslated,
       originalTranslated: translatedText,
       transcribedText,
@@ -72,14 +107,16 @@ router.post('/', upload.single('audio'), async (req, res) => {
 
 router.get('/student/:id', (req, res) => {
   // Returns all questions for a student
-  const studentQs = questionsDb.filter(q => q.studentId === req.params.id);
-  res.json(studentQs);
+  const studentQs = db.prepare('SELECT * FROM questions WHERE studentId = ? ORDER BY createdAt DESC').all(req.params.id);
+  // Parse aiReply back to object for the frontend
+  const parsed = studentQs.map(q => ({ ...q, aiReply: q.aiReply ? JSON.parse(q.aiReply) : null }));
+  res.json(parsed);
 });
 
 router.get('/pending', (req, res) => {
   // Returns all pending questions for mentors
-  res.json(questionsDb);
+  const pendingQs = db.prepare("SELECT * FROM questions WHERE status = 'queued_for_mentor' ORDER BY createdAt ASC").all();
+  res.json(pendingQs);
 });
 
 module.exports = router;
-module.exports.questionsDb = questionsDb;

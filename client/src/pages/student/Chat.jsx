@@ -1,36 +1,80 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PlayCircle, Mic, Send, Bot } from 'lucide-react';
+import axios from 'axios';
+import { useAuth } from '../../components/AuthContext';
 
 export default function Chat() {
   const [text, setText] = useState('');
-  const [messages, setMessages] = useState(() => [
-    {
-      id: '1',
-      sender: 'student',
-      text: 'Python-ல் loops எப்படி?',
-      translated: 'How do I use loops in Python?',
-      time: '10:30 AM'
-    },
-    {
-      id: '2',
-      sender: 'ai',
-      text: 'ஒரு loop என்பது வீட்டு வேலைகள் செய்வது போன்றது...',
-      time: '10:31 AM'
-    },
-    {
-      id: '3',
-      sender: 'mentor',
-      text: 'A loop is like doing chores. Let me explain...',
-      translated: 'ஒரு loop என்பது வீட்டு வேலைகள் செய்வது போன்றது. நான் விளக்குகிறேன்...',
-      isAudio: true,
-      time: '11:45 AM'
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    fetchHistory();
+  }, [user]);
+
+  const fetchHistory = async () => {
+    if (!user) return;
+    try {
+      const qs = await axios.get(`http://localhost:3001/api/ask/student/${user.id}`);
+
+      // Transform SQLite structure into chronological chat message blocks
+      let chatFlow = [];
+
+      for (const q of qs.data) {
+        // 1. Student's Original Question
+        chatFlow.push({
+          id: `q_${q.id}`,
+          sender: 'student',
+          text: q.original,
+          translated: q.translated,
+          time: new Date(q.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          rawTime: new Date(q.createdAt)
+        });
+
+        // 2. AI Tutor Reply (if any)
+        if (q.aiReply) {
+          chatFlow.push({
+            id: `ai_${q.id}`,
+            sender: 'ai',
+            text: q.aiReply.originalTranslated,
+            time: new Date(q.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            rawTime: new Date(q.createdAt)
+          });
+        }
+
+        // 3. Mentor Replies (if any)
+        try {
+          const reps = await axios.get(`http://localhost:3001/api/mentor/question/${q.id}`);
+          for (const rep of reps.data) {
+            chatFlow.push({
+              id: `rep_${rep.id}`,
+              sender: 'mentor',
+              text: rep.english,
+              translated: rep.translated,
+              time: new Date(rep.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              rawTime: new Date(rep.createdAt)
+            });
+          }
+        } catch (e) {
+          console.error('Failed to fetch replies for ', q.id);
+        }
+      }
+
+      // Sort by absolute time to ensure correct flow
+      chatFlow.sort((a, b) => a.rawTime - b.rawTime);
+      setMessages(chatFlow);
+
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
     }
-  ]);
+  };
 
   const speakText = (textToSpeak) => {
     if ('speechSynthesis' in window) {
       const utterance = new SpeechSynthesisUtterance(textToSpeak);
-      // For demo, try to set to Tamil if possible, fallback to default
       const voices = window.speechSynthesis.getVoices();
       const ptVoice = voices.find(v => v.lang.includes('ta'));
       if (ptVoice) utterance.voice = ptVoice;
@@ -41,13 +85,8 @@ export default function Chat() {
   };
 
   const handleSend = () => {
-    if (!text) return;
-    setMessages([...messages, {
-      id: Date.now().toString(),
-      sender: 'student',
-      text,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    }]);
+    // Basic redirect suggestion for demo flow
+    alert("Please use the 'Ask' tab to record new questions with Voice Translation.");
     setText('');
   };
 
@@ -57,18 +96,22 @@ export default function Chat() {
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-violet to-teal p-1">
             <div className="w-full h-full bg-ink rounded-full flex items-center justify-center font-bold text-lg text-white">
-              A
+              S
             </div>
           </div>
           <div>
-            <h2 className="font-syne font-bold text-xl">Dr. Amara Osei</h2>
-            <p className="text-xs text-lime font-bold">Online • Replies within 2h</p>
+            <h2 className="font-syne font-bold text-xl">My Private Channel</h2>
+            <p className="text-xs text-lime font-bold">Secure Global Sync</p>
           </div>
         </div>
       </header>
 
       <div className="flex-1 overflow-y-auto p-8 space-y-6">
-        {messages.map(msg => (
+        {loading ? (
+          <div className="text-center py-20 text-paper/50 animate-pulse">
+            Decrypting communication logs...
+          </div>
+        ) : messages.map(msg => (
           <div key={msg.id} className={`flex ${msg.sender === 'student' ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-[70%] rounded-2xl p-4 ${msg.sender === 'student'
               ? 'bg-gradient-to-tr from-teal to-sky text-ink rounded-br-none'
@@ -89,10 +132,8 @@ export default function Chat() {
                     <PlayCircle size={24} />
                   </button>
                   <div>
+                    <div className="text-xs font-bold text-violet mb-2 flex items-center gap-1">Human Mentor</div>
                     <p className="text-[15px] leading-relaxed">{msg.translated || msg.text}</p>
-                    {msg.translated && (
-                      <p className="text-xs mt-2 text-paper/40">Translated from English</p>
-                    )}
                   </div>
                 </div>
               )}
@@ -107,10 +148,16 @@ export default function Chat() {
             </div>
           </div>
         ))}
+
+        {!loading && messages.length === 0 && (
+          <div className="text-center py-20 text-paper/50">
+            <p>No questions yet. Go to the Ask tab to start!</p>
+          </div>
+        )}
       </div>
 
       <div className="p-4 border-t border-white/5 bg-ink3 flex gap-4 items-end">
-        <button className="p-3 bg-teal/10 text-teal rounded-xl hover:bg-teal hover:text-ink transition-colors flex-shrink-0">
+        <button className="p-3 bg-teal/10 text-teal rounded-xl hover:bg-teal hover:text-ink transition-colors flex-shrink-0 cursor-not-allowed opacity-50">
           <Mic size={24} />
         </button>
         <div className="flex-1 relative">
@@ -118,10 +165,11 @@ export default function Chat() {
             value={text}
             onChange={(e) => setText(e.target.value)}
             className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 min-h-[50px] max-h-[150px] outline-none text-sm resize-none"
-            placeholder="Type your message..."
+            placeholder="Go to 'Ask' tab to record new multilingual questions..."
+            disabled
           />
         </div>
-        <button onClick={handleSend} className="p-3 bg-teal text-ink font-bold rounded-xl hover:bg-teal/80 transition-colors flex-shrink-0">
+        <button onClick={handleSend} className="p-3 bg-teal/50 text-ink font-bold rounded-xl cursor-not-allowed flex-shrink-0">
           <Send size={24} />
         </button>
       </div>

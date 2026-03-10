@@ -10,6 +10,9 @@ import Chat from './pages/student/Chat';
 import MentorLayout from './layouts/MentorLayout';
 import MentorDashboard from './pages/mentor/Dashboard';
 import MentorUpload from './pages/mentor/Upload';
+import MentorStudents from './pages/mentor/Students';
+import MentorSettings from './pages/mentor/Settings';
+import MentorAnalytics from './pages/mentor/Analytics';
 
 function App() {
   return (
@@ -38,7 +41,10 @@ function App() {
           </ProtectedRoute>
         }>
           <Route path="dashboard" element={<MentorDashboard />} />
+          <Route path="students" element={<MentorStudents />} />
           <Route path="upload" element={<MentorUpload />} />
+          <Route path="settings" element={<MentorSettings />} />
+          <Route path="analytics" element={<MentorAnalytics />} />
         </Route>
       </Routes>
     </div>
