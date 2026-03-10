@@ -1,0 +1,101 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --ink: #0D0D1A;
+    --paper: #F7F4EE;
+    --teal: #00C9A7;
+    --amber: #FFB830;
+    --coral: #FF6B6B;
+    --sky: #4CC9F0;
+    --violet: #7B2FBE;
+    --lime: #C8F135;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background-color: var(--ink);
+    color: var(--paper);
+    font-family: 'DM Sans', sans-serif;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Syne', sans-serif;
+  }
+}
+
+@layer components {
+  /* Buttons */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 bg-[var(--teal)] text-[var(--ink)] px-8 py-3.5 rounded-xl cursor-pointer no-underline transition-all duration-300;
+    font-weight: 600;
+    font-size: 0.95rem;
+    border: none;
+  }
+  .btn-primary:hover {
+    @apply -translate-y-[2px] shadow-[0_12px_30px_rgba(0,201,167,0.4)];
+  }
+
+  .btn-outline {
+    @apply inline-flex items-center justify-center gap-2 bg-transparent border border-white/20 text-[var(--paper)] px-8 py-3.5 rounded-xl cursor-pointer no-underline transition-all duration-300;
+    font-weight: 500;
+    font-size: 0.95rem;
+  }
+  .btn-outline:hover {
+    @apply bg-white/5 border-[var(--paper)];
+  }
+
+  /* Structural Components */
+  .card-glass {
+    @apply bg-white/5 border border-white/10 rounded-2xl backdrop-blur-md;
+  }
+  
+  .problem-card {
+    @apply rounded-[20px] p-8 relative overflow-hidden transition-transform duration-300;
+  }
+  .problem-card:hover {
+    @apply -translate-y-1;
+  }
+  .problem-card.c1 { background: linear-gradient(135deg, rgba(255,107,107,0.15), rgba(255,107,107,0.05)); border: 1px solid rgba(255,107,107,0.25); }
+  .problem-card.c2 { background: linear-gradient(135deg, rgba(255,184,48,0.15), rgba(255,184,48,0.05)); border: 1px solid rgba(255,184,48,0.25); }
+  .problem-card.c3 { background: linear-gradient(135deg, rgba(76,201,240,0.15), rgba(76,201,240,0.05)); border: 1px solid rgba(76,201,240,0.25); }
+}
+
+@layer utilities {
+  .animate-drift   { animation: drift  12s ease-in-out infinite alternate; }
+  .animate-fadeUp  { animation: fadeUp  0.6s ease-out forwards; }
+  .animate-float   { animation: float   6s ease-in-out infinite; }
+  .animate-breathe { animation: breathe 2.5s ease-in-out infinite; }
+  .animate-spin-slow { animation: spin-slow 20s linear infinite; }
+}
+
+@keyframes drift {
+  0%   { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(30px, 20px) scale(1.08); }
+}
+@keyframes fadeUp {
+  0%   { opacity: 0; transform: translateY(24px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-10px); }
+}
+@keyframes breathe {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 201, 167, 0.4); }
+  50%      { box-shadow: 0 0 0 10px rgba(0, 201, 167, 0); }
+}
+@keyframes pulse-dot { 
+  0%, 100% { opacity: 1; transform: scale(1); } 
+  50% { opacity: 0.5; transform: scale(1.5); } 
+}
+@keyframes spin-slow { 
+  from { transform: translate(-50%,-50%) rotate(0deg); } 
+  to { transform: translate(-50%,-50%) rotate(360deg); } 
+}
